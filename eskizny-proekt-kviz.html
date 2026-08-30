@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Эскизный проект дома — расчёт стоимости и сроков</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0F2340;
+    --panel:#152C4E;
+    --panel-hi:#1B345B;
+    --ink:#091729;
+    --chalk:#EEF2F6;
+    --muted:#8CA0B8;
+    --sand:#D9C9A8;
+    --redline:#C1502E;
+    --redline-soft:rgba(193,80,46,0.14);
+    --line:rgba(238,242,246,0.14);
+    --radius:3px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--navy);
+    color:var(--chalk);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  .grid-bg{
+    position:fixed;
+    inset:0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(238,242,246,0.05) 0, rgba(238,242,246,0.05) 1px, transparent 1px, transparent 32px),
+      repeating-linear-gradient(90deg, rgba(238,242,246,0.05) 0, rgba(238,242,246,0.05) 1px, transparent 1px, transparent 32px);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .app{
+    position:relative;
+    z-index:1;
+    max-width:640px;
+    margin:0 auto;
+    padding:20px 20px 60px;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- topbar ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:8px 0 24px;
+  }
+  .brand{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.08em;
+    color:var(--chalk);
+    white-space:nowrap;
+  }
+  .brand .dot{color:var(--redline);}
+
+  .progress-wrap{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex:1;
+    justify-content:flex-end;
+  }
+  .mini-house{width:34px;height:28px;flex-shrink:0;opacity:0.9;}
+  .mini-house path{
+    fill:none;
+    stroke:var(--chalk);
+    stroke-width:2.4;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+    transition:stroke-dashoffset 0.7s ease;
+  }
+  .progress-track{
+    position:relative;
+    height:2px;
+    width:96px;
+    background:var(--line);
+    display:none;
+  }
+  .progress-fill{
+    position:absolute;left:0;top:0;bottom:0;
+    width:0%;
+    background:var(--redline);
+    transition:width 0.5s ease;
+  }
+  .step-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+
+  @media (min-width:480px){
+    .progress-track{display:block;}
+  }
+
+  /* ---------- stage / card ---------- */
+  main{flex:1;display:flex;flex-direction:column;justify-content:center;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:36px 28px;
+    position:relative;
+    animation:fadeIn 0.45s ease;
+  }
+  @keyframes fadeIn{
+    from{opacity:0;transform:translateY(6px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card{animation:none;}
+  }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.06em;
+    color:var(--sand);
+    text-transform:uppercase;
+    margin:0 0 10px;
+  }
+  h1,h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    margin:0 0 24px;
+    line-height:1.25;
+  }
+  h1{font-size:30px;}
+  h2{font-size:24px;}
+  p.lead{
+    color:var(--muted);
+    font-size:15px;
+    line-height:1.6;
+    margin:0 0 28px;
+  }
+
+  /* ---------- choice grid ---------- */
+  .choices{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .choices.single-col{grid-template-columns:1fr;}
+
+  .choice{
+    position:relative;
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    color:var(--chalk);
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    font-weight:500;
+    text-align:left;
+    padding:16px 18px;
+    cursor:pointer;
+    transition:border-color 0.2s ease, background 0.2s ease;
+  }
+  .choice::before,.choice::after{
+    content:'';
+    position:absolute;
+    width:7px;height:7px;
+    border-color:transparent;
+    border-style:solid;
+    transition:border-color 0.2s ease;
+  }
+  .choice::before{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+  .choice::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
+  .choice:hover{border-color:rgba(238,242,246,0.35);}
+  .choice:focus-visible{outline:2px solid var(--redline);outline-offset:2px;}
+  .choice.selected{
+    border-color:var(--redline);
+    background:var(--redline-soft);
+  }
+  .choice.selected::before,.choice.selected::after{border-color:var(--redline);}
+  .choice .sub{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    color:var(--muted);
+    margin-top:3px;
+  }
+
+  /* ---------- slider ---------- */
+  .slider-block{margin-bottom:8px;}
+  .slider-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:44px;
+    font-weight:600;
+    color:var(--chalk);
+    margin-bottom:18px;
+  }
+  .slider-value span{font-size:20px;color:var(--muted);margin-left:6px;}
+  input[type="range"]{
+    -webkit-appearance:none;
+    width:100%;
+    height:2px;
+    background:var(--line);
+    outline:none;
+    margin:10px 0 6px;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--redline);
+    cursor:pointer;
+    border:3px solid var(--panel);
+    box-shadow:0 0 0 1px var(--redline);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:18px;height:18px;border-radius:50%;
+    background:var(--redline);cursor:pointer;
+    border:3px solid var(--panel);box-shadow:0 0 0 1px var(--redline);
+  }
+  .slider-scale{
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--muted);
+  }
+
+  /* ---------- contact form ---------- */
+  .field{margin-bottom:20px;}
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .field input{
+    width:100%;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    color:var(--chalk);
+    font-family:'Inter',sans-serif;
+    font-size:17px;
+    padding:8px 2px;
+    outline:none;
+    transition:border-color 0.2s ease;
+  }
+  .field input:focus{border-color:var(--redline);}
+  .field input::placeholder{color:rgba(140,160,184,0.5);}
+
+  /* ---------- nav buttons ---------- */
+  .nav-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:28px;
+    gap:12px;
+  }
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    border-radius:var(--radius);
+    padding:14px 22px;
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    display:inline-block;
+    text-decoration:none;
+    line-height:1.2;
+  }
+  .btn-primary{
+    background:var(--redline);
+    color:#fff;
+    margin-left:auto;
+  }
+  .btn-primary:hover{background:#a8461f;}
+  .btn-primary:disabled{opacity:0.35;cursor:not-allowed;background:var(--redline);}
+  .btn-primary:focus-visible{outline:2px solid var(--sand);outline-offset:2px;}
+  .btn-ghost{
+    background:transparent;
+    color:var(--muted);
+    border-color:var(--line);
+  }
+  .btn-ghost:hover{color:var(--chalk);border-color:rgba(238,242,246,0.35);}
+  .btn-ghost:focus-visible{outline:2px solid var(--redline);outline-offset:2px;}
+
+  /* ---------- start screen ---------- */
+  .start-house{width:100%;max-width:280px;height:auto;margin:0 auto 28px;display:block;}
+  .start-house path{
+    fill:none;stroke:var(--chalk);stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round;
+  }
+  .start-house .seg{
+    stroke-dasharray:400;
+    stroke-dashoffset:400;
+    animation:draw 2.4s ease forwards;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .start-house .seg{animation:none;stroke-dashoffset:0;}
+  }
+  @keyframes draw{to{stroke-dashoffset:0;}}
+  .start-wrap{text-align:center;}
+  .start-wrap h1{font-size:32px;}
+  .start-wrap .lead{max-width:420px;margin-left:auto;margin-right:auto;}
+  .start-wrap .btn-primary{margin:0 auto;display:inline-block;}
+  .meta-row{
+    display:flex;justify-content:center;gap:22px;margin-top:26px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);
+  }
+
+  /* ---------- result screen ---------- */
+  .result-house{width:100%;max-width:260px;height:auto;margin:0 auto 20px;display:block;}
+  .result-house path{fill:none;stroke:var(--chalk);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+  .spec-table{
+    width:100%;
+    border-collapse:collapse;
+    margin:24px 0;
+    font-size:14px;
+  }
+  .spec-table td{
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .spec-table td:first-child{color:var(--muted);}
+  .spec-table td:last-child{
+    text-align:right;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:500;
+  }
+  .result-figures{
+    background:var(--ink);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+    margin:22px 0;
+  }
+  .result-figures .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+  .result-figures .row:last-child{margin-bottom:0;}
+  .result-figures .rlabel{font-size:13px;color:var(--muted);}
+  .result-figures .rvalue{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:20px;font-weight:600;color:var(--sand);
+    text-align:right;
+  }
+  .disclaimer{
+    font-size:12px;color:var(--muted);line-height:1.6;margin-top:18px;
+  }
+  .success-box{text-align:center;padding:20px 0;}
+  .success-box .check{
+    width:52px;height:52px;border-radius:50%;
+    border:2px solid var(--redline);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 18px;
+    font-size:22px;color:var(--redline);
+  }
+
+  @media (max-width:420px){
+    .choices{grid-template-columns:1fr;}
+    .card{padding:28px 20px;}
+    h1{font-size:24px;}
+    .slider-value{font-size:36px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">ЭСКИЗ<span class="dot">·</span>ПРОЕКТ</div>
+    <div class="progress-wrap" id="progressWrap" style="display:none;">
+      <div class="step-label"><span id="stepNum">1</span> / <span id="stepTotal">8</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <svg class="mini-house" viewBox="0 0 60 48" id="miniHouse">
+        <path id="mh-ground" d="M6 42 L54 42" />
+        <path id="mh-walls" d="M14 20 L14 42 M46 20 L46 42" />
+        <path id="mh-roofchimney" d="M10 20 L30 6 L50 20 M38 10 L38 18 L44 18 L44 6" />
+        <path id="mh-door" d="M26 42 L26 28 L34 28 L34 42" />
+        <path id="mh-windows" d="M18 24 L18 32 L24 32 L24 24 Z M18 28 L24 28 M21 24 L21 32 M36 24 L36 32 L42 32 L42 24 Z M36 28 L42 28 M39 24 L39 32" />
+      </svg>
+    </div>
+  </div>
+
+  <main id="stage"></main>
+
+</div>
+
+<script>
+(function(){
+
+  // ---------- state ----------
+  // TODO: replace with your real WhatsApp number (digits only, with country code)
+  const WHATSAPP_NUMBER = '77477806699';
+
+  const answers = {
+    area:150, floors:null,
+    style:null, plot:null, timing:null
+  };
+  let stepIndex = -1; // -1 = start screen
+
+  const steps = [
+    {
+      id:'area', title:'Какая площадь дома?',
+      type:'slider', min:50, max:500, step:10, unit:'м²'
+    },
+    {
+      id:'floors', title:'Этажность',
+      type:'choice', cols:2,
+      options:[
+        {v:'1', label:'1 этаж'},
+        {v:'2', label:'2 этажа'},
+        {v:'2m', label:'2 этажа + мансарда'},
+        {v:'3', label:'3 этажа'}
+      ]
+    },
+    {
+      id:'style', title:'Стиль фасада',
+      type:'choice', cols:1,
+      options:[
+        {v:'modern', label:'Современный'},
+        {v:'classic', label:'Классический'},
+        {v:'chalet', label:'Шале / фахверк'},
+        {v:'minimal', label:'Минимализм'},
+        {v:'undecided', label:'Пока не решил(а)'}
+      ]
+    },
+    {
+      id:'plot', title:'Участок под строительство',
+      type:'choice', cols:1,
+      options:[
+        {v:'ready', label:'Уже есть, размеры известны'},
+        {v:'needs_binding', label:'Есть, но нужна привязка проекта'},
+        {v:'choosing', label:'Ещё выбираю участок'}
+      ]
+    },
+    {
+      id:'timing', title:'Когда планируете начать строительство?',
+      type:'choice', cols:1,
+      options:[
+        {v:'season', label:'В этом сезоне'},
+        {v:'m3_6', label:'Через 3–6 месяцев'},
+        {v:'m6_12', label:'Через 6–12 месяцев'},
+        {v:'exploring', label:'Пока изучаю варианты'}
+      ]
+    }
+  ];
+
+  const segmentOrder = ['ground','walls','roofchimney','door','windows'];
+
+  const stage = document.getElementById('stage');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressFill = document.getElementById('progressFill');
+  const stepNumEl = document.getElementById('stepNum');
+  const stepTotalEl = document.getElementById('stepTotal');
+
+  stepTotalEl.textContent = steps.length;
+
+  // ---------- mini house dash setup ----------
+  function initMiniHouse(){
+    segmentOrder.forEach(seg=>{
+      const el = document.getElementById('mh-'+seg);
+      const len = el.getTotalLength ? el.getTotalLength() : 60;
+      el.style.strokeDasharray = len;
+      el.style.strokeDashoffset = len;
+    });
+  }
+  function revealMiniHouse(upToIndex){
+    segmentOrder.forEach((seg,i)=>{
+      const el = document.getElementById('mh-'+seg);
+      if(i <= upToIndex){
+        el.style.strokeDashoffset = 0;
+      } else {
+        const len = el.getTotalLength ? el.getTotalLength() : 60;
+        el.style.strokeDashoffset = len;
+      }
+    });
+  }
+
+  function updateProgress(){
+    if(stepIndex < 0){ progressWrap.style.display = 'none'; return; }
+    progressWrap.style.display = 'flex';
+    stepNumEl.textContent = Math.min(stepIndex+1, steps.length);
+    const pct = ((stepIndex+1)/steps.length)*100;
+    progressFill.style.width = pct+'%';
+    revealMiniHouse(stepIndex-1); // reveal segments for completed steps
+  }
+
+  const labelMaps = {
+    floors:{'1':'1 этаж','2':'2 этажа','2m':'2 этажа + мансарда','3':'3 этажа'},
+    style:{modern:'Современный', classic:'Классический', chalet:'Шале / фахверк', minimal:'Минимализм'},
+    plot:{ready:'Уже есть, размеры известны', needs_binding:'Есть, нужна привязка', choosing:'Ещё выбираю'},
+    timing:{season:'В этом сезоне', m3_6:'Через 3–6 мес.', m6_12:'Через 6–12 мес.', exploring:'Пока изучаю варианты'}
+  };
+
+  // ---------- renderers ----------
+  function renderStart(){
+    stage.innerHTML = `
+      <div class="card start-wrap">
+        <svg class="start-house" viewBox="0 0 200 160">
+          <path class="seg" d="M20 138 L180 138" />
+          <path class="seg" d="M46 70 L46 138 M154 70 L154 138" style="animation-delay:.15s" />
+          <path class="seg" d="M40 70 L100 26 L160 70" style="animation-delay:.3s" />
+          <path class="seg" d="M120 40 L120 64 L132 64 L132 22" style="animation-delay:.45s" />
+          <path class="seg" d="M92 138 L92 104 L108 104 L108 138" style="animation-delay:.6s" />
+          <path class="seg" d="M58 90 L58 110 L76 110 L76 90 Z M58 100 L76 100 M67 90 L67 110" style="animation-delay:.75s" />
+          <path class="seg" d="M124 90 L124 110 L142 110 L142 90 Z M124 100 L142 100 M133 90 L133 110" style="animation-delay:.9s" />
+        </svg>
+        <p class="eyebrow" style="text-align:center;">Эскизный проект дома</p>
+        <h1>Узнайте стоимость<br>и сроки за 2 минуты</h1>
+        <p class="lead">5 коротких вопросов о вашем доме — и вы получите ориентировочный расчёт эскизного проекта: планировки, фасады, визуализация.</p>
+        <button class="btn btn-primary" id="startBtn">Начать расчёт →</button>
+        <div class="meta-row">
+          <span>5 ВОПРОСОВ</span><span>~2 МИН</span><span>БЕЗ ОБЯЗАТЕЛЬСТВ</span>
+        </div>
+      </div>
+    `;
+    document.getElementById('startBtn').addEventListener('click', ()=>{ goToStep(0); });
+  }
+
+  function renderStep(){
+    const step = steps[stepIndex];
+    let bodyHtml = '';
+
+    if(step.type === 'choice'){
+      bodyHtml = `<div class="choices ${step.cols===1?'single-col':''}">`;
+      step.options.forEach(opt=>{
+        const selected = answers[step.id] === opt.v ? 'selected' : '';
+        bodyHtml += `<button class="choice ${selected}" data-value="${opt.v}">${opt.label}</button>`;
+      });
+      bodyHtml += `</div>`;
+    }
+
+    if(step.type === 'slider'){
+      bodyHtml = `
+        <div class="slider-block">
+          <div class="slider-value"><span id="sliderNum">${answers.area}</span><span>${step.unit}</span></div>
+          <input type="range" id="areaSlider" min="${step.min}" max="${step.max}" step="${step.step}" value="${answers.area}">
+          <div class="slider-scale"><span>${step.min} м²</span><span>${step.max} м²</span></div>
+        </div>
+      `;
+    }
+
+    stage.innerHTML = `
+      <div class="card">
+        <p class="eyebrow">Вопрос ${stepIndex+1} из ${steps.length}</p>
+        <h2>${step.title}</h2>
+        ${bodyHtml}
+        <div class="nav-row">
+          <button class="btn btn-ghost" id="backBtn">${stepIndex===0 ? 'Отмена' : '← Назад'}</button>
+          <button class="btn btn-primary" id="nextBtn" ${isStepValid(step) ? '' : 'disabled'}>
+            ${stepIndex===steps.length-1 ? 'Узнать стоимость →' : 'Далее →'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    // wire up interactions
+    if(step.type === 'choice'){
+      stage.querySelectorAll('.choice').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          answers[step.id] = btn.getAttribute('data-value');
+          stage.querySelectorAll('.choice').forEach(b=>b.classList.remove('selected'));
+          btn.classList.add('selected');
+          document.getElementById('nextBtn').disabled = false;
+        });
+      });
+    }
+    if(step.type === 'slider'){
+      const slider = document.getElementById('areaSlider');
+      const numEl = document.getElementById('sliderNum');
+      slider.addEventListener('input', ()=>{
+        answers.area = parseInt(slider.value,10);
+        numEl.textContent = answers.area;
+      });
+    }
+    document.getElementById('backBtn').addEventListener('click', ()=>{
+      if(stepIndex===0){ goToStart(); } else { goToStep(stepIndex-1); }
+    });
+    document.getElementById('nextBtn').addEventListener('click', ()=>{
+      if(stepIndex===steps.length-1){ sendToWhatsApp(); }
+      else { goToStep(stepIndex+1); }
+    });
+  }
+
+  function isStepValid(step){
+    if(step.type==='choice') return !!answers[step.id];
+    if(step.type==='slider') return true;
+    return true;
+  }
+
+  function sendToWhatsApp(){
+    const link = buildWhatsAppLink();
+    stepIndex = steps.length; // house fully drawn
+    updateProgress();
+
+    stage.innerHTML = `
+      <div class="card success-box">
+        <div class="check">✓</div>
+        <h2>Ответы приняты</h2>
+        <p class="lead">Чтобы узнать стоимость проекта и сроки — напишите нам в WhatsApp. Все ваши ответы уже вставлены в сообщение.</p>
+        <a class="btn btn-primary" href="${link}" target="_blank" rel="noopener" style="display:block;text-align:center;">Написать в WhatsApp →</a>
+        <button class="btn btn-ghost" id="restartBtn" style="margin-top:12px;">Начать заново</button>
+      </div>
+    `;
+    document.getElementById('restartBtn').addEventListener('click', goToStart);
+  }
+
+  function buildWhatsAppLink(){
+    const lines = [
+      `Здравствуйте! Хочу заказать эскизный проект дома.`,
+      `Площадь: ${answers.area} м²`,
+      `Этажность: ${labelMaps.floors[answers.floors]}`,
+      `Стиль фасада: ${labelMaps.style[answers.style]}`,
+      `Участок: ${labelMaps.plot[answers.plot]}`,
+      `Сроки начала стройки: ${labelMaps.timing[answers.timing]}`
+    ];
+    const text = encodeURIComponent(lines.join('\n'));
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
+  }
+
+  function goToStart(){
+    stepIndex = -1;
+    updateProgress();
+    renderStart();
+  }
+  function goToStep(i){
+    stepIndex = i;
+    updateProgress();
+    renderStep();
+  }
+
+  // ---------- init ----------
+  initMiniHouse();
+  goToStart();
+
+})();
+</script>
+
+</body>
+</html>
